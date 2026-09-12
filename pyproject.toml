@@ -7,13 +7,14 @@ name = "job-radar"
 version = "0.1.0"
 description = "Explainable job ranking for remote AI roles"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["fastapi>=0.115,<1", "uvicorn[standard]>=0.34,<1"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.6"]
 
 [project.scripts]
 job-radar = "job_radar.cli:main"
+job-radar-ingest = "job_radar.ingest:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
