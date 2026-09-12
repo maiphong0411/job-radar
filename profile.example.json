@@ -1,0 +1,6 @@
+{
+  "target_titles": ["AI Engineer", "Machine Learning Engineer", "Data Scientist"],
+  "skills": ["Python", "NLP", "LLM", "RAG", "FastAPI", "Docker", "SQL"],
+  "preferred_locations": ["Remote", "Vietnam"],
+  "minimum_score": 60
+}
