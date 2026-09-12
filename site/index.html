@@ -1,70 +1,7 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Private, explainable ranking for remote AI and data jobs.">
-  <title>Job Radar</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <header class="hero">
-    <nav><a class="brand" href="./">JOB RADAR <span>●</span></a><a href="https://github.com/maiphong0411/job-radar">GitHub ↗</a></nav>
-    <div class="hero-grid">
-      <div>
-        <p class="eyebrow">REMOTE AI ROLES · VIETNAM</p>
-        <h1>Find the signal<br>inside the noise.</h1>
-        <p class="intro">Rank job listings against your real strengths. Your CSV stays in your browser—nothing is uploaded.</p>
-      </div>
-      <section class="upload-card">
-        <label for="csvFile">PRIVATE JOB HISTORY</label>
-        <input id="csvFile" type="file" accept=".csv,text/csv">
-        <button id="chooseFile" type="button">Choose CSV file</button>
-        <p id="fileStatus">No file selected</p>
-      </section>
-    </div>
-  </header>
-
-  <main>
-    <section class="profile-panel">
-      <div>
-        <p class="eyebrow dark">YOUR SEARCH PROFILE</p>
-        <h2>What should count as a good match?</h2>
-      </div>
-      <div class="fields">
-        <label>Target titles<input id="titles" value="AI Engineer, Machine Learning Engineer, Data Scientist"></label>
-        <label>Skills<input id="skills" value="Python, NLP, LLM, RAG, FastAPI, Docker, SQL"></label>
-        <label>Preferred locations<input id="locations" value="Remote, Vietnam"></label>
-      </div>
-    </section>
-
-    <section id="results" class="results" hidden>
-      <div class="summary">
-        <div><strong id="activeCount">0</strong><span>active roles</span></div>
-        <div><strong id="applyCount">0</strong><span>apply now</span></div>
-        <div><strong id="averageScore">0</strong><span>average fit</span></div>
-      </div>
-      <div class="results-heading">
-        <div><p class="eyebrow dark">RANKED SHORTLIST</p><h2>Your strongest opportunities</h2></div>
-        <select id="filter" aria-label="Filter recommendations">
-          <option value="all">All recommendations</option>
-          <option value="apply_now">Apply now</option>
-          <option value="review">Review</option>
-          <option value="low_priority">Low priority</option>
-          <option value="skip">Skip</option>
-        </select>
-      </div>
-      <div id="jobList" class="job-list"></div>
-    </section>
-
-    <section id="emptyState" class="empty-state">
-      <span>01</span>
-      <h2>Bring your own data</h2>
-      <p>Select your private job-history CSV above. The dashboard accepts the aliases already defined by Job Radar.</p>
-    </section>
-  </main>
-
-  <footer><span>JOB RADAR MVP</span><span>Private by design · Explainable by default</span></footer>
-  <script src="app.js"></script>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Remote AI jobs with a clear path to becoming qualified."><title>Job Radar — From role to roadmap</title><link rel="stylesheet" href="styles.css"></head><body>
+<header class="topbar"><a class="brand" href="./">JOB RADAR <b>●</b></a><span id="dataStatus">Loading market data…</span></header>
+<main><section class="hero"><p class="eyebrow">REMOTE AI MARKET · VIETNAM</p><h1>Don’t just find a job.<br><em>Build your way into it.</em></h1><p>Explore remote roles, understand what employers require, and get a concrete learning path for the job you want.</p></section>
+<section class="metrics"><article><strong id="jobCount">—</strong><span>Open remote roles</span></article><article><strong id="companyCount">—</strong><span>Hiring companies</span></article><article><strong id="newCount">—</strong><span>Added this week</span></article><article><strong id="topSkill">—</strong><span>Most requested skill</span></article></section>
+<section class="market"><aside><p class="eyebrow dark">FILTER THE MARKET</p><label>Search<input id="search" type="search" placeholder="Role, company or skill"></label><label>Role<select id="roleFilter"><option value="all">All roles</option></select></label><label>Seniority<select id="levelFilter"><option value="all">All levels</option></select></label><label>Location<select id="locationFilter"><option value="all">All locations</option></select></label><label class="check"><input id="vietnamOnly" type="checkbox" checked> Available from Vietnam</label><div class="demand"><b>MARKET DEMAND</b><div id="skillDemand"></div></div></aside>
+<section class="list"><div class="heading"><div><p class="eyebrow dark">AVAILABLE NOW</p><h2>Remote opportunities</h2></div><span id="resultCount"></span></div><div id="jobList"></div></section></section></main>
+<dialog id="analysisDialog"><button id="closeDialog" class="close">×</button><div id="analysisContent"></div></dialog><footer><span>JOB RADAR MVP</span><span>Requirement → Gap → Resource → Proof</span></footer><script src="config.js"></script><script src="app.js"></script></body></html>
