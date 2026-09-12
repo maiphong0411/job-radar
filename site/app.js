@@ -1,97 +1,15 @@
-const $ = (selector) => document.querySelector(selector);
-const splitList = (value) => value.split(',').map((item) => item.trim()).filter(Boolean);
-const normalize = (value) => String(value ?? '').trim();
-const tokenSet = (value) => new Set(normalize(value).toLowerCase().match(/[a-z0-9+#.]+/g)?.map((x) => x.replace(/^\.+|\.+$/g, '')) ?? []);
-let analyzedJobs = [];
-
-$('#chooseFile').addEventListener('click', () => $('#csvFile').click());
-$('#csvFile').addEventListener('change', async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  $('#fileStatus').textContent = `${file.name} · ${(file.size / 1024).toFixed(1)} KB`;
-  try {
-    const rows = parseCsv(await file.text());
-    analyzeRows(rows);
-  } catch (error) {
-    $('#fileStatus').textContent = `Could not read file: ${error.message}`;
-  }
-});
-
-['titles', 'skills', 'locations'].forEach((id) => {
-  $(`#${id}`).addEventListener('change', () => {
-    if (window.currentRows) analyzeRows(window.currentRows);
-  });
-});
-$('#filter').addEventListener('change', renderJobs);
-
-function parseCsv(text) {
-  const rows = [];
-  let row = [], field = '', quoted = false;
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text[i], next = text[i + 1];
-    if (char === '"' && quoted && next === '"') { field += '"'; i += 1; }
-    else if (char === '"') quoted = !quoted;
-    else if (char === ',' && !quoted) { row.push(field); field = ''; }
-    else if ((char === '\n' || char === '\r') && !quoted) {
-      if (char === '\r' && next === '\n') i += 1;
-      row.push(field); field = ''; if (row.some(Boolean)) rows.push(row); row = [];
-    } else field += char;
-  }
-  row.push(field); if (row.some(Boolean)) rows.push(row);
-  if (rows.length < 2) throw new Error('CSV has no data rows');
-  const headers = rows.shift().map((header) => header.replace(/^\uFEFF/, '').trim());
-  return rows.map((values) => Object.fromEntries(headers.map((header, index) => [header, normalize(values[index])])));
-}
-
-function pick(row, ...fields) { return fields.map((field) => row[field]).find(Boolean) ?? ''; }
-function includesPhrase(text, phrase) { return text.toLowerCase().includes(phrase.toLowerCase()); }
-
-function analyzeRows(rows) {
-  window.currentRows = rows;
-  const profile = {
-    titles: splitList($('#titles').value), skills: splitList($('#skills').value),
-    locations: splitList($('#locations').value)
-  };
-  analyzedJobs = rows.map((row) => ({
-    title: pick(row, 'title', 'job_title'), company: pick(row, 'company', 'company_name'),
-    location: pick(row, 'location', 'job_location'), description: pick(row, 'description', 'job_description'),
-    url: pick(row, 'url', 'job_url', 'source_url'), evidence: pick(row, 'eligibility_evidence'),
-    status: pick(row, 'status') || 'new'
-  })).filter((job) => job.status.toLowerCase() !== 'closed').map((job) => scoreJob(job, profile))
-    .sort((a, b) => b.score - a.score);
-  $('#emptyState').hidden = true; $('#results').hidden = false;
-  $('#activeCount').textContent = analyzedJobs.length;
-  $('#applyCount').textContent = analyzedJobs.filter((job) => job.recommendation === 'apply_now').length;
-  $('#averageScore').textContent = analyzedJobs.length ? Math.round(analyzedJobs.reduce((sum, job) => sum + job.score, 0) / analyzedJobs.length) : 0;
-  renderJobs();
-}
-
-function scoreJob(job, profile) {
-  const searchable = `${job.title} ${job.location} ${job.description} ${job.evidence}`;
-  const tokens = tokenSet(searchable);
-  const blockers = ['us only', 'united states only', 'must be located in the us', 'no international', 'not available in vietnam'];
-  const eligible = !blockers.some((blocker) => `${job.location} ${job.evidence}`.toLowerCase().includes(blocker));
-  const titleMatch = profile.titles.some((title) => includesPhrase(job.title, title));
-  const locationMatch = profile.locations.some((location) => includesPhrase(`${job.location} ${job.evidence}`, location));
-  const matchedSkills = profile.skills.filter((skill) => [...tokenSet(skill)].every((token) => tokens.has(token)));
-  let score = Math.round(45 * matchedSkills.length / Math.max(profile.skills.length, 1) + 30 * Number(titleMatch) + 25 * Number(locationMatch));
-  if (!eligible) score = Math.min(score, 39);
-  const recommendation = !eligible ? 'skip' : score >= 80 ? 'apply_now' : score >= 60 ? 'review' : 'low_priority';
-  return { ...job, score, eligible, matchedSkills, recommendation };
-}
-
-function renderJobs() {
-  const filter = $('#filter').value;
-  const jobs = analyzedJobs.filter((job) => filter === 'all' || job.recommendation === filter);
-  $('#jobList').innerHTML = jobs.map((job) => `
-    <article class="job">
-      <div class="score">${job.score}</div>
-      <div><h3>${escapeHtml(job.title || 'Untitled role')}</h3><p class="meta">${escapeHtml(job.company || 'Unknown company')} · ${escapeHtml(job.location || 'Location not listed')}</p>
-      <div class="chips">${job.matchedSkills.map((skill) => `<span class="chip">${escapeHtml(skill)}</span>`).join('') || '<span class="chip">No profile skills detected</span>'}</div>
-      ${safeUrl(job.url) ? `<a class="job-link" href="${escapeHtml(job.url)}" target="_blank" rel="noopener noreferrer">View original role ↗</a>` : ''}</div>
-      <span class="action ${job.recommendation}">${job.recommendation.replace('_', ' ')}</span>
-    </article>`).join('') || '<p>No jobs match this filter.</p>';
-}
-
-function safeUrl(value) { try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol); } catch { return false; } }
-function escapeHtml(value) { const div = document.createElement('div'); div.textContent = value; return div.innerHTML; }
+const $=s=>document.querySelector(s),state={jobs:[],filtered:[]};
+const esc=v=>{const e=document.createElement('div');e.textContent=String(v??'');return e.innerHTML};
+const safe=v=>{try{return ['http:','https:'].includes(new URL(v).protocol)}catch{return false}};
+boot();
+async function boot(){try{const api=window.JOB_RADAR_CONFIG?.apiBaseUrl?.replace(/\/$/,'');const r=await fetch(api?`${api}/jobs`:'sample-jobs.json');if(!r.ok)throw Error(`HTTP ${r.status}`);const p=await r.json();state.jobs=p.jobs;$('#dataStatus').textContent=api?`Live · updated ${date(p.updated_at)}`:'Demo data · API ready';setup();render()}catch(e){$('#dataStatus').textContent=`Data unavailable · ${e.message}`}}
+function setup(){add('#roleFilter',[...new Set(state.jobs.map(j=>j.role))]);add('#levelFilter',[...new Set(state.jobs.map(j=>j.seniority))]);add('#locationFilter',[...new Set(state.jobs.map(j=>j.location))]);['search','roleFilter','levelFilter','locationFilter','vietnamOnly'].forEach(id=>$(`#${id}`).addEventListener('input',render));$('#closeDialog').onclick=()=>$('#analysisDialog').close();$('#analysisDialog').onclick=e=>{if(e.target===$('#analysisDialog'))e.target.close()}}
+function add(s,values){values.sort().forEach(v=>$(s).insertAdjacentHTML('beforeend',`<option value="${esc(v)}">${esc(v)}</option>`))}
+function render(){const q=$('#search').value.toLowerCase();state.filtered=state.jobs.filter(j=>`${j.title} ${j.company} ${j.skills.join(' ')}`.toLowerCase().includes(q)&&($('#roleFilter').value==='all'||j.role===$('#roleFilter').value)&&($('#levelFilter').value==='all'||j.seniority===$('#levelFilter').value)&&($('#locationFilter').value==='all'||j.location===$('#locationFilter').value)&&(!$('#vietnamOnly').checked||j.vietnam_eligible));metrics();demand();jobs()}
+function counts(){const c={};state.filtered.flatMap(j=>j.skills).forEach(s=>c[s]=(c[s]||0)+1);return Object.entries(c).sort((a,b)=>b[1]-a[1])}
+function metrics(){$('#jobCount').textContent=state.filtered.length;$('#companyCount').textContent=new Set(state.filtered.map(j=>j.company)).size;$('#newCount').textContent=state.filtered.filter(j=>(Date.now()-new Date(j.discovered_at))/86400000<=7).length;$('#topSkill').textContent=counts()[0]?.[0]||'—';$('#resultCount').textContent=`${state.filtered.length} roles`}
+function demand(){const x=counts().slice(0,6),m=x[0]?.[1]||1;$('#skillDemand').innerHTML=x.map(([s,n])=>`<div class="skill-row"><div class="skill-label"><span>${esc(s)}</span><b>${n}</b></div><div class="bar"><i style="width:${100*n/m}%"></i></div></div>`).join('')}
+function jobs(){$('#jobList').innerHTML=state.filtered.map(j=>`<article class="job" data-id="${esc(j.id)}" tabindex="0"><div class="score">${j.analysis.readiness_score}</div><div><h3>${esc(j.title)}</h3><p class="meta">${esc(j.company)} · ${esc(j.location)} · ${esc(j.seniority)}</p><div class="chips">${j.skills.map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div></div><span class="tag ${esc(j.analysis.recommendation)}">${esc(j.analysis.recommendation.replace('_',' '))}</span></article>`).join('')||'<p>No matching roles.</p>';document.querySelectorAll('.job').forEach(c=>{const open=()=>analysis(state.jobs.find(j=>j.id===c.dataset.id));c.onclick=open;c.onkeydown=e=>{if(e.key==='Enter')open()}})}
+function analysis(j){const a=j.analysis;$('#analysisContent').innerHTML=`<header class="analysis-head"><p class="eyebrow">HOW TO PASS THIS JOB</p><h2>${esc(j.title)}</h2><p>${esc(j.company)} · ${esc(j.location)}</p><div class="readiness"><div class="readiness-score">${a.readiness_score}</div><div><b>Current readiness</b><p>${esc(a.summary)}</p></div></div></header><div class="analysis-body"><h3>Recommendation</h3><div class="decision">${esc(a.decision)}</div><div class="matched"><h3>Strengths you can prove</h3><div class="chips">${a.matched_requirements.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div></div><h3>Close these critical gaps</h3><div class="gap-list">${a.gaps.map(gap).join('')}</div><h3>Your execution path</h3><div class="roadmap">${a.roadmap.map((p,i)=>`<div class="phase"><small>PHASE ${i+1} · ${esc(p.duration)}</small><h4>${esc(p.goal)}</h4><p>${esc(p.outcome)}</p></div>`).join('')}</div>${safe(j.url)?`<p><a href="${esc(j.url)}" target="_blank" rel="noopener noreferrer"><b>View original job ↗</b></a></p>`:''}</div>`;$('#analysisDialog').showModal()}
+function gap(g){return`<article class="gap"><h4>${esc(g.skill)}</h4><p><b>Why it matters:</b> ${esc(g.why)}</p><div class="resources"><div class="resource"><b>COURSE</b><br>${link(g.course)}</div><div class="resource"><b>DOCUMENTATION</b><br>${link(g.document)}</div></div><div class="proof"><b>PROOF TO BUILD:</b> ${esc(g.proof)}</div></article>`}
+function link(r){return safe(r.url)?`<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.title)} ↗</a>`:esc(r.title)}function date(v){return new Date(v).toLocaleDateString()}
