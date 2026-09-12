@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Private, explainable ranking for remote AI and data jobs.">
+  <title>Job Radar</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <nav><a class="brand" href="./">JOB RADAR <span>●</span></a><a href="https://github.com/maiphong0411/job-radar">GitHub ↗</a></nav>
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">REMOTE AI ROLES · VIETNAM</p>
+        <h1>Find the signal<br>inside the noise.</h1>
+        <p class="intro">Rank job listings against your real strengths. Your CSV stays in your browser—nothing is uploaded.</p>
+      </div>
+      <section class="upload-card">
+        <label for="csvFile">PRIVATE JOB HISTORY</label>
+        <input id="csvFile" type="file" accept=".csv,text/csv">
+        <button id="chooseFile" type="button">Choose CSV file</button>
+        <p id="fileStatus">No file selected</p>
+      </section>
+    </div>
+  </header>
+
+  <main>
+    <section class="profile-panel">
+      <div>
+        <p class="eyebrow dark">YOUR SEARCH PROFILE</p>
+        <h2>What should count as a good match?</h2>
+      </div>
+      <div class="fields">
+        <label>Target titles<input id="titles" value="AI Engineer, Machine Learning Engineer, Data Scientist"></label>
+        <label>Skills<input id="skills" value="Python, NLP, LLM, RAG, FastAPI, Docker, SQL"></label>
+        <label>Preferred locations<input id="locations" value="Remote, Vietnam"></label>
+      </div>
+    </section>
+
+    <section id="results" class="results" hidden>
+      <div class="summary">
+        <div><strong id="activeCount">0</strong><span>active roles</span></div>
+        <div><strong id="applyCount">0</strong><span>apply now</span></div>
+        <div><strong id="averageScore">0</strong><span>average fit</span></div>
+      </div>
+      <div class="results-heading">
+        <div><p class="eyebrow dark">RANKED SHORTLIST</p><h2>Your strongest opportunities</h2></div>
+        <select id="filter" aria-label="Filter recommendations">
+          <option value="all">All recommendations</option>
+          <option value="apply_now">Apply now</option>
+          <option value="review">Review</option>
+          <option value="low_priority">Low priority</option>
+          <option value="skip">Skip</option>
+        </select>
+      </div>
+      <div id="jobList" class="job-list"></div>
+    </section>
+
+    <section id="emptyState" class="empty-state">
+      <span>01</span>
+      <h2>Bring your own data</h2>
+      <p>Select your private job-history CSV above. The dashboard accepts the aliases already defined by Job Radar.</p>
+    </section>
+  </main>
+
+  <footer><span>JOB RADAR MVP</span><span>Private by design · Explainable by default</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>
