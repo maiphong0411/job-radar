@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from job_radar.db import connect, public_jobs
+from job_radar.analysis import enrich, trend_report
 
 
 def allowed_origins() -> list[str]:
@@ -35,4 +36,11 @@ def health() -> dict[str, str]:
 def jobs() -> dict:
     with connect() as connection:
         records = public_jobs(connection)
-    return {"updated_at": datetime.now(UTC).isoformat(), "jobs": records}
+    return {"updated_at": datetime.now(UTC).isoformat(), "jobs": enrich(records)}
+
+
+@app.get("/analysis/trends")
+def trends() -> dict:
+    with connect() as connection:
+        records = public_jobs(connection)
+    return {"updated_at": datetime.now(UTC).isoformat(), "analysis": trend_report(records)}
