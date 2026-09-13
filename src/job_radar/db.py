@@ -24,8 +24,6 @@ CREATE TABLE IF NOT EXISTS jobs (
     status TEXT NOT NULL DEFAULT 'open',
     skills_json TEXT NOT NULL DEFAULT '[]',
     analysis_json TEXT,
-    salary_min_usd REAL,
-    salary_max_usd REAL,
     updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
@@ -45,10 +43,6 @@ def connect(path: Path | None = None) -> Iterator[sqlite3.Connection]:
     connection.row_factory = sqlite3.Row
     try:
         connection.executescript(SCHEMA)
-        columns = {row["name"] for row in connection.execute("PRAGMA table_info(jobs)")}
-        for name in ("salary_min_usd", "salary_max_usd"):
-            if name not in columns:
-                connection.execute(f"ALTER TABLE jobs ADD COLUMN {name} REAL")
         yield connection
         connection.commit()
     finally:
@@ -60,23 +54,21 @@ def upsert_job(connection: sqlite3.Connection, job: dict) -> None:
     connection.execute(
         """INSERT INTO jobs (
             id,title,company,role,seniority,location,vietnam_eligible,discovered_at,
-            url,description,status,skills_json,analysis_json,salary_min_usd,salary_max_usd,updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            url,description,status,skills_json,analysis_json,updated_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(id) DO UPDATE SET
             title=excluded.title, company=excluded.company, role=excluded.role,
             seniority=excluded.seniority, location=excluded.location,
             vietnam_eligible=excluded.vietnam_eligible, description=excluded.description,
             status=excluded.status, skills_json=excluded.skills_json,
             analysis_json=COALESCE(excluded.analysis_json,jobs.analysis_json),
-            salary_min_usd=excluded.salary_min_usd, salary_max_usd=excluded.salary_max_usd,
             updated_at=excluded.updated_at""",
         (
             job["id"], job["title"], job["company"], job["role"], job["seniority"],
             job["location"], int(job["vietnam_eligible"]), job["discovered_at"],
             job["url"], job.get("description", ""), job.get("status", "open"),
             json.dumps(job.get("skills", [])),
-            json.dumps(job["analysis"]) if job.get("analysis") else None,
-            job.get("salary_min_usd"), job.get("salary_max_usd"), now,
+            json.dumps(job["analysis"]) if job.get("analysis") else None, now,
         ),
     )
 
@@ -96,7 +88,4 @@ def serialize(row: sqlite3.Row) -> dict:
         "discovered_at": row["discovered_at"], "url": row["url"],
         "skills": json.loads(row["skills_json"]),
         "analysis": json.loads(row["analysis_json"]) if row["analysis_json"] else None,
-        "reported_salary": {
-            "min_usd_year": row["salary_min_usd"], "max_usd_year": row["salary_max_usd"]
-        } if row["salary_min_usd"] is not None else None,
     }
