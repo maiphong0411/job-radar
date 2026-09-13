@@ -42,6 +42,10 @@ def normalize(row: dict[str, str]) -> dict:
     text = f"{title} {description}".lower()
     blockers = ("us only", "united states only", "not available in vietnam", "no international")
     eligible = not any(value in f"{location} {evidence}".lower() for value in blockers)
+    salary_min = first(row, "salary_min_usd", "min_salary_usd")
+    salary_max = first(row, "salary_max_usd", "max_salary_usd")
+    period = first(row, "salary_period").lower()
+    multiplier = 12 if period in ("month", "monthly") else 1
     return {
         "id": identifier, "title": title, "company": first(row, "company", "company_name"),
         "role": first(row, "role") or infer_role(title),
@@ -51,6 +55,8 @@ def normalize(row: dict[str, str]) -> dict:
         "url": url, "description": description,
         "status": "closed" if first(row, "status").lower() == "closed" else "open",
         "skills": [skill for skill in KNOWN_SKILLS if skill.lower() in text],
+        "salary_min_usd": float(salary_min) * multiplier if salary_min else None,
+        "salary_max_usd": float(salary_max or salary_min) * multiplier if salary_min else None,
     }
 
 
